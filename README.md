@@ -6,6 +6,9 @@ Test:
 
  The bin folder contains a statilcally linked exe.
  (hopefully works on your side). Connect the DMM by USB. (TCP or GPIB is not implemented yet)
+<BR>
+<img src='doc\ss1.png'>
+<BR>
 
 Build:
 -----

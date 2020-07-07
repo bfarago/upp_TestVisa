@@ -14,7 +14,8 @@ VISA Library 64 Path:     $(VXIPNPPATH)winnt\Lib_x64\msc
 #include "eng.h"
 
 #define LLOGF(...)
-#define SEARCH_USB_INSTR ("USB?*INSTR")
+#define SEARCH_USB_INSTR ("?*INSTR")
+//#define SEARCH_USB_INSTR ("USB?*INSTR")
 #define SEARCH_TCP_INSTR ("TCP?*INSTR")
 
 #define MAX_MESSAGE_LENGTH (1024) // status or error response
@@ -133,41 +134,67 @@ const char* IVIDmm::getConfigPresetName(int id)const
 {
 	const char* p;
 	switch (id){
-		case C_VoltageDcAuto: p="Voltage DC Auto range"; break;
-		case C_VoltageDc1m:   p="Voltage DC 1mV range"; break;
-		case C_VoltageDc1:   p="Voltage DC 1V range"; break;
-		case C_VoltageAcAuto: p="Voltage AC Auto range"; break;
-		case C_CurrentDcAuto: p="Current DC Auto range"; break;
-		case C_CurrentAcAuto: p="Current AC Auto range"; break;
-		case C_CapacitanceAuto: p="Capacitance Auto range"; break;
-		case C_ResistanceAuto: p="Resistance Auto range"; break;
+		case C_VoltageDcAuto: p="Voltage DC"; break;
+		case C_VoltageAcAuto: p="Voltage AC"; break;
+		case C_CurrentDcAuto: p="Current DC"; break;
+		case C_CurrentAcAuto: p="Current AC"; break;
+		case C_CapacitanceAuto: p="Capacitance"; break;
+		case C_ResistanceAuto: p="Resistance"; break;
 		default:
 			p="Invalid preset";
 			break;
 	}
 	return p;
 }
+const char* IVIDmm::getConfigRange(int id)const
+{
+	const char* p;
+	switch (id){
+		case C_RangeAuto: p="Auto"; break;
+		case C_Range1k: p="1k"; break;
+		case C_Range10: p="10"; break;
+		case C_Range1: p="1"; break;
+		case C_Range1m: p="1 mili"; break;
+		case C_Range1u: p="1 micro"; break;
+		default:
+			p="Invalid range";
+			break;
+	}
+	return p;
+}
+void IVIDmm::getRange(char* buf){
+	switch(m_RangeId){
+		case 0: sprintf(buf, ""); break;
+		case 1: sprintf(buf, " 1000,0.001"); break;
+		case 2: sprintf(buf, " 10,0.001"); break;
+		case 3: sprintf(buf, " 1,0.001"); break;
+		case 4: sprintf(buf, " 0.001,0.000001"); break;
+		case 5: sprintf(buf, " 0.000001,0.000000001"); break;
+	}
+}
 void IVIDmm::read()
 {
 	bool ok;
 	char* cfg;
+	char range[MAX_RESULT_LENGTH];
 	unsigned char buffer[MAX_RESULT_LENGTH];
 	char*p=(char*)buffer;
 	switch (configPreset){
-		case C_VoltageDcAuto: m_sUnit="Vdc"; cfg="CONF:VOLT:DC\n"; break;
-		case C_VoltageDc1m: m_sUnit="Vdc"; cfg="CONF:VOLT:DC 0.001,0.000001\n"; break;
-		case C_VoltageDc1: m_sUnit="Vdc"; cfg="CONF:VOLT:DC 1,0.001\n"; break;
-		case C_VoltageAcAuto: m_sUnit="Vac"; cfg="CONF:VOLT:AC\n"; break;
-		case C_CurrentDcAuto: m_sUnit="Adc"; cfg="CONF:CURR:DC\n"; break;
-		case C_CurrentAcAuto: m_sUnit="Aac"; cfg="CONF:CURR:AC\n"; break;
-		case C_CapacitanceAuto: m_sUnit="F"; cfg="CONF:CAP\n"; break;
-		case C_ResistanceAuto: m_sUnit="Ohm"; cfg="CONF:RES\n"; break;
+		case C_VoltageDcAuto: m_sUnit="Vdc"; cfg="CONF:VOLT:DC"; break;
+		case C_VoltageAcAuto: m_sUnit="Vac"; cfg="CONF:VOLT:AC"; break;
+		case C_CurrentDcAuto: m_sUnit="Adc"; cfg="CONF:CURR:DC"; break;
+		case C_CurrentAcAuto: m_sUnit="Aac"; cfg="CONF:CURR:AC"; break;
+		case C_CapacitanceAuto: m_sUnit="F"; cfg="CONF:CAP"; break;
+		case C_ResistanceAuto: m_sUnit="Ohm"; cfg="CONF:RES"; break;
 		default:
 			configPreset=C_VoltageDcAuto;
-			m_sUnit="Vdc"; cfg="CONF:VOLT:DC\n";
+			m_sUnit="Vdc"; cfg="CONF:VOLT:DC";
 			break;
 	}
-	ok=cmd(cfg, NULL);
+	
+	getRange(&range[0]);
+	sprintf(p, "%s%s\n", cfg, range);
+	ok=cmd(p, NULL);
 	if (!ok) {
 		return;
 	}
@@ -228,7 +255,12 @@ const char* IVIDmm::getValueString()
 		m_sValue="Overload (";
 		m_sValue<<m_sUnit;
 		m_sValue<<")";
-	}else{
+	}/*else if (m_Value<1e-30){ //infinit small
+		m_sValue="Range Error (";
+		m_sValue<<m_sUnit;
+		m_sValue<<")";
+	}*/
+	else{
 		m_sValue=eng(m_Value, 9, 0);
 		m_sValue<<m_sUnit;
 	}

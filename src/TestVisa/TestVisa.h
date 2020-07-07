@@ -28,6 +28,7 @@ public:
 		bnOpen.Enable();
 		bnClose.Disable();
 		dlPreset.Disable();
+		dlRange.Disable();
 		mIdn.SetData("Disconnected");
 		onInstrumentCmdStatus("Init",0,"Ok.");
 	}
@@ -41,47 +42,16 @@ public:
 		bnOpen.Disable();
 		bnClose.Disable();
 		dlPreset.Disable();
+		dlRange.Disable();
 		mIdn.SetData("Disconnected");
 		onInstrumentCmdStatus("Deinit",0,"Ok.");
 	}
-	void onBnOpen(){
-		if (!ividmm.isOpen()){
-			ividmm.logicalName=~dllogicalName;
-			if (ividmm.open()){
-				mIdn.SetData(ividmm.getIdn());
-				dllogicalName.Disable();
-				bnTrigger.Enable();
-				bnRead.Enable();
-				bnOpen.Disable();
-				bnClose.Enable();
-				dlPreset.Enable();
-				dlPreset.Clear();
-				for (int i=0; i< ividmm.getMaxConfigPreset(); i++){
-					dlPreset.Add(i, ividmm.getConfigPresetName(i));
-				}
-				onTimer1();
-			}else{
-				bnOpen.Enable();
-				bnClose.Disable();
-				//onInstrumentCmdStatus("Open",0,"Error");
-			}
-		}else{
-			onInstrumentCmdStatus("Open",0,"It was already opened before.");
-		}
-	}
-	void onBnClose(){
-		if (ividmm.isOpen()){
-			ividmm.close();
-			bnTrigger.Disable();
-			bnRead.Disable();
-			bnOpen.Enable();
-			bnClose.Disable();
-			dllogicalName.Enable();
-			dlPreset.Disable();
-			mIdn.SetData("Disconnected");
-			onInstrumentCmdStatus("Close",0,"Ok");
-		}else{
-			onInstrumentCmdStatus("Close",0,"It was not opened before.");
+	void onBnOpen();
+	void onBnClose();
+	void onDlRange(){
+		int id= dlRange.GetData();
+		if (!IsNull(id)){
+			ividmm.setRange(id);
 		}
 	}
 	void onDlPreset(){
@@ -102,16 +72,11 @@ public:
 	void onInstrumentFind(char* instr){
 		dllogicalName.Add(instr);
 	}
-	void onInstrumentCmdStatus(char* cmd, int scode, char* stext){
-		mCmd.SetData(cmd);
-		mStatusCode.SetData(scode);
-		mStatus.SetData(stext);
-		mLog.Add(cmd, stext);
-		LOGF("%s, %s\n",cmd, stext);
-		mLog.SetCursor( mLog.GetCount()-1);
-	}
+	void onInstrumentCmdStatus(char* cmd, int scode, char* stext);
 
 	IVIDmm ividmm;
+	WithLogLayout<ParentCtrl> tabLog;
+	WithStatusLayout<ParentCtrl> tabStatus;
 	public:
 	static testVisa* m_Singleton;
 	static void fnTimer1(){
