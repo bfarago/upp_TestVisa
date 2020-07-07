@@ -5,7 +5,7 @@ Test:
 -----
 
  The bin folder contains a statilcally linked exe.
- (hopefully works on your side). Connect the DMM by USB. (TCP or GPIB is not implemented yet)
+ (hopefully works on your side). Connect the DMM by USB or LXI/TCP. (GPIB is not tested yet)
 <BR>
 <img src='doc\ss1.png'>
 <BR>
@@ -26,9 +26,8 @@ Develop:
 Planned Instruements to add soon:
  - DC Power supply
  - Function generator
- - Oscilloscope
+ - Oscilloscope (?)
  
 Todos:
- - Manual instrument id to enable other methodes for connection (not only USB).
- - Measurement ranges shall be configurable.
+ - Measurement ranges shall be updated by methode and instrument. (?)
  
