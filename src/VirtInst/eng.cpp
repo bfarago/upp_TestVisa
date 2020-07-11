@@ -2,7 +2,7 @@
 Small engineering double to string format function. Header file.
 Author: Barna Farago MYND-ideal. (C)2020
 */
-#include "TestVisa.h"
+#include "VirtInst.h"
 #define MICRO "µ"
 #define PREFIX_START (-24)
 

@@ -10,41 +10,27 @@ VISA Library 64 Path:     $(VXIPNPPATH)winnt\Lib_x64\msc
 */
 #ifndef _TestVisa_idmm_h_
 #define _TestVisa_idmm_h_
-#include "visa.h"
+#include "VirtInst.h"
 
-class IVIDmm {
+class IVIDmm: public InstrumentBase {
 	public:
 	IVIDmm();
 	~IVIDmm();
 	
-	void init();
-	const char* getIdn(){
-		return m_sIdn.Begin();
-	}
 	bool open();
 	bool close();
-	void deInit();
 	
-	bool cmd(char * cmmand, char* buffer);
 	int getMaxConfigPreset()const { return C_MAXPreset;}
 	int getMaxRange()const { return C_MAXRange;}
+	
 	const char* getConfigPresetName(int id)const;
-	const char* IVIDmm::getConfigRange(int id)const;
+	const char* getConfigRange(int id)const;
 	void read();
 	void reset();
-	void clear();
 	void sendTrigger();
-	void handleError(char* cmmand);
 	double getValueDouble()const;
 	const char* getValueString();
-	bool isOpen(){return m_IsOpen;}
-	bool wasError(){return m_WasError;}
-	String logicalName;
-	bool IdQuery;
-	bool ResetAtInit;
-	Event<char*>  WhenInstrumentFind;
-	Event<char*, int, char*>  WhenInstrumentCmdStatus;
-	void SetGoToLocalBack(bool b){m_GoToLocalBack=b;}
+	
 	void setRange(int id){ m_RangeId= (tConfigRange_en)id;}
 	void setPreset(int id){ configPreset= (tConfigPreset_en)id;}
 	typedef enum{
@@ -68,25 +54,15 @@ class IVIDmm {
 	tConfigPreset_en configPreset;
 	
 	private:
-	bool m_GoToLocalBack;
-	bool m_GoToRemoteFirst; // this one looks like not so usable
-	bool m_IsInit;
-	bool m_IsOpen;
-	bool m_WasError;
-	ViSession defaultRM;
-	ViSession session;
-	ViStatus statusCode;
-	ViUInt32 numInstrs;
-	ViFindList findList;
+
+	void getRange(char* buf);
 	tConfigRange_en m_RangeId;
 	double m_RangeMax;
 	double m_RangeResolution;
+	
 	double m_Value;
 	String m_sValue;
-	String m_sIdn;
 	char* m_sUnit;
-	char instrResourceString[VI_FIND_BUFLEN];
-	void getRange(char* buf);
 };
 
 #endif
