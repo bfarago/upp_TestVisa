@@ -1,0 +1,19 @@
+description "Virtual Instrument Software Architect\377";
+
+uses
+	CtrlLib;
+
+library
+	visa64;
+
+file
+	VirtInst.h,
+	ibase.h,
+	ibase.cpp,
+	dcpsu.h,
+	dcpsu.cpp,
+	idmm.h,
+	idmm.cpp,
+	eng.cpp,
+	eng.h;
+
