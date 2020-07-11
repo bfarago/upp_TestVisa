@@ -24,9 +24,12 @@ Develop:
 --------
 
 Planned Instruements to add soon:
- - DC Power supply
- - Function generator
+ - Function generator (I will test on Rigol funcgen)
  - Oscilloscope (?)
+ 
+Instruement types added:
+ - DC Power supply (tested with Rohde&Schwartz HMP2020)
+ - DMM (tested with Keysight 3446xA)
  
 Todos:
  - Measurement ranges shall be updated by methode and instrument. (?)
