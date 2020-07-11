@@ -4,37 +4,139 @@ Author: Barna Farago MYND-ideal. (C)2020
 */
 #include "TestVisa.h"
 
+InstrumentConnectPanel::InstrumentConnectPanel(InstrumentBase* instrument)
+: mInstrument(instrument)
+{
+	bnOpen.WhenPush= THISBACK(onBnOpen);
+	bnClose.WhenPush=THISBACK(onBnClose);
+	if (mInstrument){
+		instrument->WhenInstrumentFind=THISBACK(onInstrumentFind);
+	}
+	bnOpen.Disable();
+	bnClose.Disable();
+	oRelease.SetData("1");
+	dllogicalName.Disable();
+}
+void InstrumentConnectPanel::OnInit()
+{
+	dllogicalName.Clear();
+	dllogicalName.Enable();
+	bnOpen.Enable();
+	bnClose.Disable();
+	mIdn.SetData("Disconnected");
+}
+void InstrumentConnectPanel::OnDeinit()
+{
+	dllogicalName.Disable();
+	bnOpen.Disable();
+	bnClose.Disable();
+	mIdn.SetData("Disconnected");
+}
+void InstrumentConnectPanel::onBnOpen(){
+	if (!mInstrument) return;
+	if (!mInstrument->isOpen()){
+		mInstrument->logicalName=~dllogicalName;
+		if (mInstrument->open()){
+			mIdn.SetData(mInstrument->getIdn());
+			dllogicalName.Disable();
+			bnOpen.Disable();
+			bnClose.Enable();
+			WhenInstrumentConnect(mInstrument, true, true);
+		}else{
+			bnOpen.Enable();
+			bnClose.Disable();
+			WhenInstrumentConnect(mInstrument, true, false);
+		}
+	}else{
+		WhenInstrumentConnect(mInstrument, true, false);
+	}
+}
+
+void InstrumentConnectPanel::onBnClose(){
+	if (!mInstrument) return;
+	if (mInstrument->isOpen()){
+		mInstrument->SetGoToLocalBack(oRelease.Get() == 1);
+		mInstrument->close();
+		bnOpen.Enable();
+		bnClose.Disable();
+		dllogicalName.Enable();
+		mIdn.SetData("Disconnected");
+		WhenInstrumentConnect(mInstrument, false, true);
+	}else{
+		WhenInstrumentConnect(mInstrument, false, false);
+	}
+}
+void testVisa::OnInstrumentConnect(InstrumentBase* instr, bool connected, bool successfull)
+{
+	if (connected){
+		if (successfull){
+			bnTrigger.Enable();
+			bnRead.Enable();
+			dlPreset.Enable();
+			dlRange.Enable();
+			dlPreset.Clear();
+			dlRange.Clear();
+			for (int i=0; i< ividmm.getMaxConfigPreset(); i++){
+				dlPreset.Add(i, ividmm.getConfigPresetName(i));
+			}
+			for (int i=0; i< ividmm.getMaxRange(); i++){
+				dlRange.Add(i, ividmm.getConfigRange(i));
+			}
+			onTimer1();
+		}else{
+			onInstrumentCmdStatus("Open",0,"Error");
+			//onInstrumentCmdStatus("Open",0,"It was already opened before.");
+		}
+	}else{ //close
+		if (successfull){
+			bnTrigger.Disable();
+			bnRead.Disable();
+			dlPreset.Disable();
+			dlRange.Disable();
+			onInstrumentCmdStatus("Close",0,"Ok");
+		}else{
+			onInstrumentCmdStatus("Close",0,"It was not opened before.");
+		}
+	}
+}
 testVisa* testVisa::m_Singleton=NULL;
 testVisa::testVisa()
+:
+	tabDmmConnect(&ividmm)
+	,tabDcPsuConnect(&dcpsu)
 {
 	m_Singleton=this;
-	CtrlLayout(*this, "Keysight DMM SCPI test Visa api");
+	CtrlLayout(*this, "DMM and PSU SCPI test Visa api");
+	CtrlLayout(tabDmmConnect);
+	CtrlLayout(tabDcPsuConnect);
 	CtrlLayout(tabLog);
 	CtrlLayout(tabStatus);
+	tabDmmConnect.WhenInstrumentConnect=THISBACK(OnInstrumentConnect);
+	tabDcPsuConnect.WhenInstrumentConnect=THISBACK(OnInstrumentConnect);
 	
 	bnInit.WhenPush=THISBACK(onBnInit);
 	bnDeInit.WhenPush=THISBACK(onBnDeinit);
 	
-	bnOpen.WhenPush=THISBACK(onBnOpen);
-	bnClose.WhenPush=THISBACK(onBnClose);
-	
 	bnTrigger.WhenPush=THISBACK(onBnTrigger);
 	bnRead.WhenPush=THISBACK(onBnRead);
 	
-	ividmm.WhenInstrumentFind=THISBACK(onInstrumentFind);
 	ividmm.WhenInstrumentCmdStatus=THISBACK(onInstrumentCmdStatus);
+	dcpsu.WhenInstrumentCmdStatus=THISBACK(onInstrumentCmdStatus);
+	
+	oOutput1.WhenAction=THISBACK(onOutput1);
+	oOutput2.WhenAction=THISBACK(onOutput2);
 	
 	dlPreset.WhenAction=THISBACK(onDlPreset);
 	dlRange.WhenAction=THISBACK(onDlRange);
-	bnOpen.Disable();
-	bnClose.Disable();
+
 	bnDeInit.Disable();
 	bnTrigger.Disable();
 	bnRead.Disable();
-	dllogicalName.Disable();
-	dlRange.Disable();
-	oRelease.SetData("1");
 	
+	dlRange.Disable();
+
+	tabsTop.Add(tabDmmConnect.SizePos(), "DMM");
+	tabsTop.Add(tabDcPsuConnect.SizePos(), "DC PSU");
 	tabsBottom.Add(tabLog.SizePos(), "Log");
 	tabsBottom.Add(tabStatus.SizePos(), "Status");
 	tabLog.mLog.AddColumn("Cmd");
@@ -48,52 +150,14 @@ void testVisa::onInstrumentCmdStatus(char* cmd, int scode, char* stext){
 	LOGF("%s, %s\n",cmd, stext);
 	tabLog.mLog.SetCursor( tabLog.mLog.GetCount()-1);
 }
-void testVisa::onBnOpen(){
-	if (!ividmm.isOpen()){
-		ividmm.logicalName=~dllogicalName;
-		if (ividmm.open()){
-			mIdn.SetData(ividmm.getIdn());
-			dllogicalName.Disable();
-			bnTrigger.Enable();
-			bnRead.Enable();
-			bnOpen.Disable();
-			bnClose.Enable();
-			dlPreset.Enable();
-			dlRange.Enable();
-			dlPreset.Clear();
-			dlRange.Clear();
-			for (int i=0; i< ividmm.getMaxConfigPreset(); i++){
-				dlPreset.Add(i, ividmm.getConfigPresetName(i));
-			}
-			for (int i=0; i< ividmm.getMaxRange(); i++){
-				dlRange.Add(i, ividmm.getConfigRange(i));
-			}
-			onTimer1();
-		}else{
-			bnOpen.Enable();
-			bnClose.Disable();
-			//onInstrumentCmdStatus("Open",0,"Error");
-		}
-	}else{
-		onInstrumentCmdStatus("Open",0,"It was already opened before.");
-	}
+
+void testVisa::onOutput1(){
+	bool b= oOutput1.Get();
+	dcpsu.setOutputChannelState(1, b);
 }
-void testVisa::onBnClose(){
-	if (ividmm.isOpen()){
-		ividmm.SetGoToLocalBack(oRelease.Get() == 1);
-		ividmm.close();
-		bnTrigger.Disable();
-		bnRead.Disable();
-		bnOpen.Enable();
-		bnClose.Disable();
-		dllogicalName.Enable();
-		dlPreset.Disable();
-		dlRange.Disable();
-		mIdn.SetData("Disconnected");
-		onInstrumentCmdStatus("Close",0,"Ok");
-	}else{
-		onInstrumentCmdStatus("Close",0,"It was not opened before.");
-	}
+void testVisa::onOutput2(){
+	bool b= oOutput2.Get();
+	dcpsu.setOutputChannelState(2, b);
 }
 GUI_APP_MAIN
 {

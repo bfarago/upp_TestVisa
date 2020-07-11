@@ -12,42 +12,55 @@ using namespace Upp;
 #define LAYOUTFILE <TestVisa/TestVisa.lay>
 #include <CtrlCore/lay.h>
 
-#include "idmm.h"
+#include <VirtInst/VirtInst.h>
 
+class InstrumentConnectPanel: public WithInstrumentConnectLayout<ParentCtrl>{
+	typedef InstrumentConnectPanel CLASSNAME;
+	public:
+		InstrumentConnectPanel(InstrumentBase* instrument);
+		void OnInit();
+		void OnDeinit();
+		void onInstrumentFind(char* instr){
+			dllogicalName.Add(instr);
+		}
+		void onBnOpen();
+		void onBnClose();
+		InstrumentBase* mInstrument;
+		Event<InstrumentBase*, bool, bool>  WhenInstrumentConnect;
+};
 
 class testVisa : public WithTestVisaLayout<TopWindow> {
 public:
 	typedef testVisa CLASSNAME;
 	testVisa();
 	void onBnInit(){
-		dllogicalName.Clear();
+		tabDmmConnect.OnInit();
+		tabDcPsuConnect.OnInit();
 		ividmm.init();
-		dllogicalName.Enable();
+		dcpsu.init();
 		bnDeInit.Enable();
 		bnInit.Disable();
-		bnOpen.Enable();
-		bnClose.Disable();
 		dlPreset.Disable();
 		dlRange.Disable();
-		mIdn.SetData("Disconnected");
 		onInstrumentCmdStatus("Init",0,"Ok.");
 	}
 	void onBnDeinit(){
+		tabDmmConnect.OnDeinit();
+		tabDcPsuConnect.OnDeinit();
 		ividmm.deInit();
-		dllogicalName.Disable();
+		dcpsu.deInit();
 		bnTrigger.Disable();
 		bnRead.Disable();
 		bnInit.Enable();
 		bnDeInit.Disable();
-		bnOpen.Disable();
-		bnClose.Disable();
 		dlPreset.Disable();
 		dlRange.Disable();
-		mIdn.SetData("Disconnected");
 		onInstrumentCmdStatus("Deinit",0,"Ok.");
 	}
-	void onBnOpen();
-	void onBnClose();
+	void OnInstrumentConnect(InstrumentBase* instr, bool connected, bool successfull);
+	void onOutput1();
+	void onOutput2();
+
 	void onDlRange(){
 		int id= dlRange.GetData();
 		if (!IsNull(id)){
@@ -69,12 +82,12 @@ public:
 		dValue.SetData(ividmm.getValueDouble());
 		mValue.SetData(ividmm.getValueString());
 	}
-	void onInstrumentFind(char* instr){
-		dllogicalName.Add(instr);
-	}
 	void onInstrumentCmdStatus(char* cmd, int scode, char* stext);
 
 	IVIDmm ividmm;
+	DcPsu  dcpsu;
+	InstrumentConnectPanel tabDmmConnect;
+	InstrumentConnectPanel tabDcPsuConnect;
 	WithLogLayout<ParentCtrl> tabLog;
 	WithStatusLayout<ParentCtrl> tabStatus;
 	public:
@@ -90,9 +103,25 @@ public:
 				onBnRead();
 			}
 		}
+		if (dcpsu.isOpen()){
+			#define MAXCNTR (4)
+			static int cntr=MAXCNTR;
+			if (cntr){
+				cntr--;
+			}else{
+				cntr=MAXCNTR;
+				dcpsu.getOutputMeasurement(1);
+				oOutput1.Set( dcpsu.getOutputChannelState(1)?1:0);
+				dcpsu.getOutputMeasurement(2);
+				oOutput2.Set( dcpsu.getOutputChannelState(2)?1:0);
+				sOutpVolt1.SetData(dcpsu.getOutputVoltageString(1));
+				sOutpVolt2.SetData(dcpsu.getOutputVoltageString(2));
+			}
+		}
 		// Very provisoric solution, later move to separate task, timestamping, etc.
 		SetTimeCallback(500, &fnTimer1);
 	}
+
 };
 
 #endif

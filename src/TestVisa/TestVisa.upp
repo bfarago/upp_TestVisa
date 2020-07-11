@@ -1,19 +1,13 @@
 description "Just a test\377";
 
 uses
-	CtrlLib;
-
-library
-	visa64;
+	CtrlLib,
+	VirtInst;
 
 file
 	TestVisa.h,
 	TestVisa.cpp,
 	TestVisa.lay,
-	idmm.h,
-	idmm.cpp,
-	eng.h,
-	eng.cpp,
 	src.tpp;
 
 mainconfig
