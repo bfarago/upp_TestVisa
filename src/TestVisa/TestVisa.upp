@@ -2,12 +2,15 @@ description "Just a test\377";
 
 uses
 	CtrlLib,
-	VirtInst;
+	VirtInst,
+	ExpandFrame;
 
 file
 	TestVisa.h,
 	TestVisa.cpp,
 	TestVisa.lay,
+	InstrumentConnect.h,
+	InstrumentConnect.cpp,
 	src.tpp;
 
 mainconfig
